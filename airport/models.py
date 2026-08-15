@@ -1,3 +1,156 @@
+from django.conf import settings
 from django.db import models
 
-# Create your models here.
+
+class Country(models.Model):
+    name = models.CharField(max_length=255, unique=True)
+
+    def __str__(self) -> str:
+        return self.name
+
+
+class City(models.Model):
+    name = models.CharField(max_length=255)
+    country = models.ForeignKey(
+        Country,
+        on_delete=models.CASCADE,
+        related_name="cities"
+    )
+
+    class Meta:
+        ordering = ["name"]
+
+    def __str__(self) -> str:
+        return self.name
+
+
+class Airport(models.Model):
+    name = models.CharField(max_length=255)
+    iata_code = models.CharField(max_length=3, unique=True)
+    closest_big_city = models.ForeignKey(
+        City,
+        on_delete=models.CASCADE,
+        related_name="airports"
+    )
+
+    class Meta:
+        ordering = ["name"]
+
+    def __str__(self) -> str:
+        return f"{self.name} ({self.iata_code}) - {self.closest_big_city.name}"
+
+
+class AirplaneType(models.Model):
+    name = models.CharField(max_length=255, unique=True)
+
+    def __str__(self) -> str:
+        return self.name
+
+
+class Airplane(models.Model):
+    name = models.CharField(max_length=255)
+    rows = models.IntegerField()
+    seats_in_row = models.IntegerField()
+    airplane_type = models.ForeignKey(
+        AirplaneType,
+        on_delete=models.CASCADE,
+        related_name="airplanes"
+    )
+
+    @property
+    def capacity(self) -> int:
+        return self.rows * self.seats_in_row
+
+    class Meta:
+        ordering = ["name"]
+
+    def __str__(self) -> str:
+        return f"{self.name} {self.airplane_type}"
+
+
+class Route(models.Model):
+    distance = models.IntegerField()
+    source = models.ForeignKey(
+        Airport,
+        on_delete=models.CASCADE,
+        related_name="routes_from"
+    )
+    destination = models.ForeignKey(
+        Airport,
+        on_delete=models.CASCADE,
+        related_name="routes_to"
+    )
+
+    def __str__(self) -> str:
+        return f"From {self.source} to {self.destination}"
+
+
+class Crew(models.Model):
+    first_name = models.CharField(max_length=255)
+    last_name = models.CharField(max_length=255)
+    position = models.CharField(max_length=255)
+
+    def __str__(self) -> str:
+        return f"{self.first_name} {self.last_name} ({self.position})"
+
+
+class Flight(models.Model):
+    route = models.ForeignKey(
+        Route,
+        on_delete=models.CASCADE,
+        related_name="flights"
+    )
+    airplane = models.ForeignKey(
+        Airplane,
+        on_delete=models.CASCADE,
+        related_name="flights"
+    )
+    crew = models.ManyToManyField(
+        Crew,
+        related_name="flights"
+    )
+    departure_time = models.DateTimeField()
+    arrival_time = models.DateTimeField()
+
+    class Meta:
+        ordering = ["departure_time"]
+
+    def __str__(self) -> str:
+        return f"Flight {self.route} on the {self.airplane} at {self.departure_time}"
+
+
+class Order(models.Model):
+    created_at = models.DateTimeField(auto_now_add=True)
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="orders"
+    )
+
+    class Meta:
+        ordering = ["-created_at"]
+
+    def __str__(self) -> str:
+        return str(self.created_at)
+
+
+class Ticket(models.Model):
+    row = models.IntegerField()
+    seat = models.IntegerField()
+    flight = models.ForeignKey(
+        Flight,
+        on_delete=models.CASCADE,
+        related_name="tickets",
+    )
+    order = models.ForeignKey(
+        Order,
+        on_delete=models.CASCADE,
+        related_name="tickets"
+    )
+
+    class Meta:
+        unique_together = ["flight", "row", "seat"]
+        ordering = ["flight"]
+
+    def __str__(self) -> str:
+        return f"{str(self.flight)} (row: {self.row}, seat: {self.seat})"
