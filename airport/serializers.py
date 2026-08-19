@@ -21,6 +21,8 @@ class CountrySerializer(serializers.ModelSerializer):
 
 
 class CitySerializer(serializers.ModelSerializer):
+    country = CountrySerializer()
+
     class Meta:
         model = City
         fields = ("id", "name", "country")
@@ -34,6 +36,14 @@ class AirportSerializer(serializers.ModelSerializer):
 
 class AirportListSerializer(serializers.ModelSerializer):
     closest_big_city = serializers.StringRelatedField()
+
+    class Meta:
+        model = Airport
+        fields = ("id", "name", "iata_code", "closest_big_city")
+
+
+class AirportDetailSerializer(serializers.ModelSerializer):
+    closest_big_city = CitySerializer(many=False, read_only=True)
 
     class Meta:
         model = Airport
