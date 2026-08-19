@@ -21,11 +21,16 @@ class CountrySerializer(serializers.ModelSerializer):
 
 
 class CitySerializer(serializers.ModelSerializer):
-    country = CountrySerializer()
+    country = CountrySerializer(read_only=True)
+    country_id = serializers.PrimaryKeyRelatedField(
+        source="country",
+        queryset=Country.objects.all(),
+        write_only=True,
+    )
 
     class Meta:
         model = City
-        fields = ("id", "name", "country")
+        fields = ("id", "name", "country", "country_id")
 
 
 class AirportSerializer(serializers.ModelSerializer):
