@@ -150,7 +150,6 @@ class FlightListSerializer(serializers.ModelSerializer):
         )
 
 
-
 class FlightRetrieveSerializer(serializers.ModelSerializer):
     route = RouteRetrieveSerializer(many=False, read_only=True)
     airplane = AirplaneSerializer(many=False, read_only=True)
