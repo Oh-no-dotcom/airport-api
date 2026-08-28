@@ -23,10 +23,13 @@ from airport.serializers import (
     CrewSerializer,
     FlightSerializer,
     OrderSerializer,
-    TicketSerializer,
     AirportListSerializer,
-    AirportDetailSerializer, RouteListSerializer, RouteRetrieveSerializer, FlightListSerializer,
-    FlightRetrieveSerializer, OrderListSerializer,
+    AirportDetailSerializer,
+    RouteListSerializer,
+    RouteRetrieveSerializer,
+    FlightListSerializer,
+    FlightRetrieveSerializer,
+    OrderListSerializer,
 )
 
 
@@ -127,8 +130,3 @@ class OrderViewSet(viewsets.ModelViewSet):
 
     def perform_create(self, serializer):
         serializer.save(user=self.request.user)
-
-
-class TicketViewSet(viewsets.ModelViewSet):
-    queryset = Ticket.objects.all()
-    serializer_class = TicketSerializer
