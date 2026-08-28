@@ -1,3 +1,4 @@
+from django.db.models.query import Prefetch
 from rest_framework import viewsets
 
 from airport.models import (
@@ -25,7 +26,7 @@ from airport.serializers import (
     TicketSerializer,
     AirportListSerializer,
     AirportDetailSerializer, RouteListSerializer, RouteRetrieveSerializer, FlightListSerializer,
-    FlightRetrieveSerializer,
+    FlightRetrieveSerializer, OrderListSerializer,
 )
 
 
@@ -104,8 +105,28 @@ class FlightViewSet(viewsets.ModelViewSet):
 
 
 class OrderViewSet(viewsets.ModelViewSet):
-    queryset = Order.objects.all()
+    queryset = Order.objects.prefetch_related(
+        Prefetch(
+            "tickets",
+            queryset=Ticket.objects.select_related(
+                "flight__route__source__closest_big_city",
+                "flight__route__destination__closest_big_city",
+                "flight__airplane__airplane_type"
+            ).prefetch_related(
+                "flight__crew"
+            )
+        )
+    )
     serializer_class = OrderSerializer
+
+    def get_serializer_class(self):
+        if self.action == "list":
+            return OrderListSerializer
+
+        return OrderSerializer
+
+    def perform_create(self, serializer):
+        serializer.save(user=self.request.user)
 
 
 class TicketViewSet(viewsets.ModelViewSet):
