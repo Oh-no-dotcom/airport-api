@@ -158,7 +158,7 @@ class Ticket(models.Model):
     def validate_ticket(row, seat, airplane, error_to_raise):
         for ticket_attr_value, ticket_attr_name, airplane_attr_name in [
             (row, "row", "rows"),
-            (seat, "seat", "seat_in_row"),
+            (seat, "seat", "seats_in_row"),
         ]:
             count_attrs = getattr(airplane, airplane_attr_name)
             if not (1 <= ticket_attr_value <= count_attrs):
@@ -189,7 +189,10 @@ class Ticket(models.Model):
     ):
         self.full_clean()
         return super(Ticket, self).save(
-            force_insert, force_update, using, update_fields
+            force_insert=force_insert,
+            force_update=force_update,
+            using=using,
+            update_fields=update_fields,
         )
 
     class Meta:
