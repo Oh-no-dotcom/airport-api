@@ -1,4 +1,5 @@
 from django.db.models.query import Prefetch
+from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import viewsets
 
 from airport.models import (
@@ -46,6 +47,12 @@ class CityViewSet(viewsets.ModelViewSet):
 class AirportViewSet(viewsets.ModelViewSet):
     queryset = Airport.objects.all()
     serializer_class = AirportSerializer
+    filter_backends = [DjangoFilterBackend]
+    filterset_fields = [
+        "name",
+        "iata_code",
+        "closest_big_city__name"
+    ]
 
     def get_serializer_class(self):
         if self.action == "list":
@@ -98,6 +105,13 @@ class FlightViewSet(viewsets.ModelViewSet):
         "airplane__airplane_type",
     ).prefetch_related("crew")
     serializer_class = FlightSerializer
+    filter_backends = [DjangoFilterBackend]
+    filterset_fields = [
+        "route",
+        "airplane",
+        "departure_time",
+        "arrival_time"
+    ]
 
     def get_serializer_class(self):
         if self.action == "list":
