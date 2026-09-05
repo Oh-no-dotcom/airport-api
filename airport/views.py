@@ -42,12 +42,12 @@ class CountryViewSet(viewsets.ModelViewSet):
 class CityViewSet(viewsets.ModelViewSet):
     queryset = City.objects.select_related("country")
     serializer_class = CitySerializer
+    filterset_fields = ["country"]
 
 
 class AirportViewSet(viewsets.ModelViewSet):
     queryset = Airport.objects.all()
     serializer_class = AirportSerializer
-    filter_backends = [DjangoFilterBackend]
     filterset_fields = [
         "name",
         "iata_code",
@@ -105,7 +105,6 @@ class FlightViewSet(viewsets.ModelViewSet):
         "airplane__airplane_type",
     ).prefetch_related("crew")
     serializer_class = FlightSerializer
-    filter_backends = [DjangoFilterBackend]
     filterset_fields = [
         "route",
         "airplane",
