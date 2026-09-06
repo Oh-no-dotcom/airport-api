@@ -62,6 +62,7 @@ class Airplane(models.Model):
         on_delete=models.CASCADE,
         related_name="airplanes"
     )
+    image = models.ImageField(upload_to="airplanes", null=True, blank=True)
 
     @property
     def capacity(self) -> int:
