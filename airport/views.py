@@ -1,5 +1,5 @@
+from django.db.models import F, Count
 from django.db.models.query import Prefetch
-from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import viewsets
 
 from airport.models import (
@@ -99,11 +99,7 @@ class CrewViewSet(viewsets.ModelViewSet):
 
 
 class FlightViewSet(viewsets.ModelViewSet):
-    queryset = Flight.objects.select_related(
-        "route__source__closest_big_city__country",
-        "route__destination__closest_big_city__country",
-        "airplane__airplane_type",
-    ).prefetch_related("crew", "tickets")
+    queryset = Flight.objects.all()
     serializer_class = FlightSerializer
     filterset_fields = [
         "route",
@@ -111,6 +107,26 @@ class FlightViewSet(viewsets.ModelViewSet):
         "departure_time",
         "arrival_time"
     ]
+
+    def get_queryset(self):
+        queryset = Flight.objects.select_related(
+        "route__source__closest_big_city__country",
+        "route__destination__closest_big_city__country",
+        "airplane__airplane_type",
+        ).prefetch_related("crew")
+
+        if self.action == "retrieve":
+            queryset = queryset.prefetch_related("tickets")
+
+        if self.action == "list":
+            queryset = queryset.annotate(
+            tickets_available=(
+                F("airplane__rows") * F("airplane__seats_in_row")
+                - Count("tickets")
+            )
+        )
+        return queryset
+
 
     def get_serializer_class(self):
         if self.action == "list":
