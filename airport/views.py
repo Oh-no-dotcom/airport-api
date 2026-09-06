@@ -1,6 +1,9 @@
 from django.db.models import F, Count
 from django.db.models.query import Prefetch
-from rest_framework import viewsets
+from rest_framework import viewsets, status
+from rest_framework.decorators import action
+from rest_framework.parsers import MultiPartParser
+from rest_framework.response import Response
 
 from airport.models import (
     Country,
@@ -76,6 +79,21 @@ class AirplaneTypeViewSet(viewsets.ModelViewSet):
 class AirplaneViewSet(viewsets.ModelViewSet):
     queryset = Airplane.objects.select_related("airplane_type")
     serializer_class = AirplaneSerializer
+
+    @action(
+        methods=["POST"],
+        detail=True,
+        url_path="upload-image",
+        parser_classes=[MultiPartParser]
+    )
+    def upload_image(self, request, pk=None):
+        airplane = self.get_object()
+        serializer = self.get_serializer(airplane, data=request.data)
+
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
 class RouteViewSet(viewsets.ModelViewSet):

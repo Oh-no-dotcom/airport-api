@@ -70,7 +70,7 @@ class AirplaneSerializer(serializers.ModelSerializer):
         queryset=AirplaneType.objects.all(),
         write_only=True
     )
-    image = serializers.ImageField(read_only=True)
+    image = serializers.ImageField()
 
     class Meta:
         model = Airplane
