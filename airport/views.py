@@ -103,7 +103,7 @@ class FlightViewSet(viewsets.ModelViewSet):
         "route__source__closest_big_city__country",
         "route__destination__closest_big_city__country",
         "airplane__airplane_type",
-    ).prefetch_related("crew")
+    ).prefetch_related("crew", "tickets")
     serializer_class = FlightSerializer
     filterset_fields = [
         "route",
