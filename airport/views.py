@@ -1,6 +1,6 @@
 from django.db.models import F, Count
 from django.db.models.query import Prefetch
-from rest_framework import viewsets, status
+from rest_framework import viewsets, status, mixins
 from rest_framework.decorators import action
 from rest_framework.parsers import MultiPartParser
 from rest_framework.response import Response
@@ -154,7 +154,12 @@ class FlightViewSet(viewsets.ModelViewSet):
         return FlightSerializer
 
 
-class OrderViewSet(viewsets.ModelViewSet):
+class OrderViewSet(
+    mixins.CreateModelMixin,
+    mixins.ListModelMixin,
+    mixins.RetrieveModelMixin,
+    viewsets.GenericViewSet
+):
     queryset = Order.objects.prefetch_related(
         Prefetch(
             "tickets",
