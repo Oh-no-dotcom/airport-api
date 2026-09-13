@@ -89,12 +89,20 @@ class AirplaneViewSet(viewsets.ModelViewSet):
     )
     def upload_image(self, request, pk=None):
         airplane = self.get_object()
-        serializer = self.get_serializer(airplane, data=request.data)
+        serializer = self.get_serializer(
+            airplane,
+            data=request.data,
+            partial=True,
+        )
 
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data, status=status.HTTP_200_OK)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+        return Response(
+            serializer.errors,
+            status=status.HTTP_400_BAD_REQUEST
+        )
 
 
 class RouteViewSet(viewsets.ModelViewSet):

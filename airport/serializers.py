@@ -139,6 +139,7 @@ class FlightSerializer(serializers.ModelSerializer):
 class FlightListSerializer(serializers.ModelSerializer):
     route = serializers.StringRelatedField()
     airplane = serializers.StringRelatedField()
+    airplane_image = serializers.ImageField(source="airplane.image", read_only=True)
     crew = serializers.StringRelatedField(many=True)
     tickets_available = serializers.IntegerField(read_only=True)
     airplane_capacity = serializers.IntegerField(
@@ -152,6 +153,7 @@ class FlightListSerializer(serializers.ModelSerializer):
             "id",
             "route",
             "airplane",
+            "airplane_image",
             "crew",
             "departure_time",
             "arrival_time",
