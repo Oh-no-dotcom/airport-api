@@ -125,7 +125,12 @@ class CrewViewSet(viewsets.ModelViewSet):
     serializer_class = CrewSerializer
 
 
-class FlightViewSet(viewsets.ModelViewSet):
+class FlightViewSet(
+    mixins.ListModelMixin,
+    mixins.CreateModelMixin,
+    mixins.RetrieveModelMixin,
+    viewsets.GenericViewSet,
+):
     queryset = Flight.objects.all()
     serializer_class = FlightSerializer
     filterset_fields = [

@@ -18,7 +18,7 @@ from airport.models import (
     AirplaneType,
     Airplane
 )
-
+from airport.serializers import AirportDetailSerializer
 
 AIRPORT_URL = reverse("airport:airport-list")
 AIRPLANE_URL = reverse("airport:airplane-list")
@@ -152,6 +152,10 @@ def detail_url(airplane_id):
     return reverse("airport:airplane-detail", args=[airplane_id])
 
 
+def airport_detail_url(airport_id):
+    return reverse("airport:airport-detail", args=[airport_id])
+
+
 def flight_detail_url(flight_id):
     return reverse(
         "airport:flight-detail",
@@ -268,5 +272,27 @@ class AirplaneImageUploadTests(TestCase):
         res = self.client.get(flight_detail_url(self.flight.id))
 
         self.assertIn("image", res.data["airplane"])
+
+
+class AirportApiRetrieveTests(TestCase):
+    def setUp(self):
+        self.client = APIClient()
+        self.user = get_user_model().objects.create_user(
+            email="test@test.com",
+            password="testpassoword123"
+        )
+        self.client.force_authenticate(user=self.user)
+
+    def test_retrieve_airport(self):
+        airport = sample_airport()
+
+        url = airport_detail_url(airport.id)
+
+        res = self.client.get(url)
+
+        serializer = AirportDetailSerializer(airport)
+
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        self.assertEqual(res.data, serializer.data)
 
 
