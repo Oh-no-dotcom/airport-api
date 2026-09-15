@@ -18,7 +18,7 @@ from airport.models import (
     AirplaneType,
     Airplane
 )
-from airport.serializers import AirportDetailSerializer
+from airport.serializers import AirportDetailSerializer, FlightListSerializer
 
 AIRPORT_URL = reverse("airport:airport-list")
 AIRPLANE_URL = reverse("airport:airplane-list")
@@ -295,4 +295,26 @@ class AirportApiRetrieveTests(TestCase):
         self.assertEqual(res.status_code, status.HTTP_200_OK)
         self.assertEqual(res.data, serializer.data)
 
+
+class AuthenticateFlightApiTests(TestCase):
+    def setUp(self):
+        self.client = APIClient()
+        self.user = get_user_model().objects.create_user(
+            email="test@test.com",
+            password="testpassword123"
+        )
+        self.client.force_authenticate(user=self.user)
+
+    def test_flight_list(self):
+        sample_flight()
+
+        res = self.client.get(FLIGHT_URL)
+
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(res.data["results"]), 1)
+
+        flight = res.data["results"][0]
+        self.assertIn("tickets_available", flight)
+        self.assertEqual(flight["tickets_available"], 120)
+        self.assertEqual(flight["airplane_capacity"], 120)
 
