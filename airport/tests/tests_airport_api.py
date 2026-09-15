@@ -16,7 +16,7 @@ from airport.models import (
     Airport,
     Route,
     AirplaneType,
-    Airplane
+    Airplane, Crew
 )
 from airport.serializers import AirportDetailSerializer, FlightListSerializer
 
@@ -124,6 +124,17 @@ def sample_airplane(**params):
 
     return Airplane.objects.create(**defaults)
 
+
+def sample_crew(**params):
+    defaults = {
+        "first_name": "First Name",
+        "last_name": "Last Name",
+        "position": "Position",
+    }
+    defaults.update(**params)
+    return Crew.objects.create(**defaults)
+
+
 def sample_flight(**params):
     route = params.pop("route", None)
     if route is None:
@@ -136,8 +147,8 @@ def sample_flight(**params):
     defaults = {
         "route": route,
         "airplane": airplane,
-        "departure_time": "2026-09-20 14:00:00",
-        "arrival_time": "2026-09-20 17:00:00"
+        "departure_time": "2026-09-21T14:00:00Z",
+        "arrival_time": "2026-09-21T17:00:00Z",
     }
     defaults.update(**params)
 
@@ -252,7 +263,6 @@ class AirplaneImageUploadTests(TestCase):
             ntf.seek(0)
             self.client.post(url, {"image": ntf}, format="multipart")
         res = self.client.get(AIRPLANE_URL)
-        print(res.data)
 
         self.assertEqual(res.status_code, status.HTTP_200_OK)
         self.assertEqual(res.data["results"][0]["id"], self.airplane.id)
@@ -318,3 +328,34 @@ class AuthenticateFlightApiTests(TestCase):
         self.assertEqual(flight["tickets_available"], 120)
         self.assertEqual(flight["airplane_capacity"], 120)
 
+
+class FlightCreationTests(TestCase):
+    def setUp(self):
+        self.client = APIClient()
+        self.user = get_user_model().objects.create_user(
+            email="test@test.com",
+            password="testpassword123",
+            is_staff=True,
+        )
+        self.client.force_authenticate(user=self.user)
+
+    def test_create_flight(self):
+        route = sample_route()
+        airplane = sample_airplane()
+        crew = sample_crew()
+
+        res = self.client.post(
+            FLIGHT_URL,
+            {
+                "route": route.id,
+                "airplane": airplane.id,
+                "crew": [crew.id],
+                "departure_time": "2026-09-21T14:00:00Z",
+                "arrival_time": "2026-09-21T17:00:00Z",
+            }
+        )
+        flight = Flight.objects.get(id=res.data["id"])
+
+        self.assertEqual(res.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(flight.route, route)
+        self.assertEqual(flight.airplane, airplane)
