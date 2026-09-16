@@ -1,10 +1,12 @@
 import os
 import tempfile
+from datetime import datetime
 
 from PIL import Image
 from django.contrib.auth import get_user_model
 from django.test import TestCase
 from django.urls import reverse
+from django.utils import timezone
 from rest_framework import status
 
 from rest_framework.test import APIClient
@@ -147,8 +149,12 @@ def sample_flight(**params):
     defaults = {
         "route": route,
         "airplane": airplane,
-        "departure_time": "2026-09-21T14:00:00Z",
-        "arrival_time": "2026-09-21T17:00:00Z",
+        "departure_time": timezone.make_aware(
+            datetime(2026, 9, 21, 14, 0)
+        ),
+        "arrival_time": timezone.make_aware(
+            datetime(2026, 9, 21, 17, 0)
+        ),
     }
     defaults.update(**params)
 
@@ -359,3 +365,38 @@ class FlightCreationTests(TestCase):
         self.assertEqual(res.status_code, status.HTTP_201_CREATED)
         self.assertEqual(flight.route, route)
         self.assertEqual(flight.airplane, airplane)
+
+
+class FlightApiUpdateDeleteTests(TestCase):
+    def setUp(self):
+        self.client = APIClient()
+        self.user = get_user_model().objects.create_user(
+            email="test@test.com",
+            password="passwordtest123",
+            is_staff = True,
+        )
+        self.client.force_authenticate(user=self.user)
+
+    def test_update_fligth(self):
+        flight = sample_flight()
+        crew = sample_crew()
+        old_departure_time = flight.departure_time
+
+        payload = {
+            "route": flight.route.id,
+            "airplane": flight.airplane.id,
+            "crew": [crew.id],
+            "departure_time": "2026-10-21T14:00:00Z",
+            "arrival_time": "2026-09-21T17:00:00Z",
+        }
+        url = flight_detail_url(flight.id)
+        res = self.client.put(url, payload)
+        print(res.data)
+
+        self.assertNotEqual(res.status_code, status.HTTP_200_OK)
+
+        flight.refresh_from_db()
+        self.assertEqual(flight.departure_time, old_departure_time)
+
+        res = self.client.delete(url)
+        self.assertEqual(res.status_code, status.HTTP_405_METHOD_NOT_ALLOWED)
