@@ -1,5 +1,7 @@
 from django.db.models import F, Count
 from django.db.models.query import Prefetch
+from drf_spectacular.types import OpenApiTypes
+from drf_spectacular.utils import extend_schema, OpenApiParameter
 from rest_framework import viewsets, status, mixins
 from rest_framework.decorators import action
 from rest_framework.parsers import MultiPartParser
@@ -166,6 +168,33 @@ class FlightViewSet(
         if self.action == "retrieve":
             return FlightRetrieveSerializer
         return FlightSerializer
+
+    @extend_schema(
+        parameters=[
+            OpenApiParameter(
+                "route",
+                type={"type": "list", "items": {"type": "number"}},
+                description="Filter by route id (ex. ?route=2)",
+            ),
+            OpenApiParameter(
+                "airplane",
+                type={"type": "list", "items": {"type": "number"}},
+                description="Filter by airplane id (ex. ?airplane=2)",
+            ),
+            OpenApiParameter(
+                "arrival_time",
+                type={"type": "list", "items": {"type": "number"}},
+                description="Filter by arrival_time (ex. ?airplane=2026-08-15T13:46:34Z)",
+            ),
+            OpenApiParameter(
+                "departure_time",
+                type={"type": "list", "items": {"type": "number"}},
+                description="Filter by departure_time (ex. ?departure_time=2026-08-15T11:46:19Z)",
+            ),
+        ]
+    )
+    def list(self, request, *args, **kwargs):
+        return super().list(request, *args, **kwargs)
 
 
 class OrderViewSet(
