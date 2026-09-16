@@ -20,12 +20,10 @@ from airport.models import (
     AirplaneType,
     Airplane, Crew
 )
-from airport.serializers import AirportDetailSerializer, FlightListSerializer
+from airport.serializers import AirportDetailSerializer
 
-AIRPORT_URL = reverse("airport:airport-list")
 AIRPLANE_URL = reverse("airport:airplane-list")
 FLIGHT_URL = reverse("airport:flight-list")
-ORDER_URL = reverse("airport:order-list")
 
 
 def sample_country(**params):
@@ -400,3 +398,31 @@ class FlightApiUpdateDeleteTests(TestCase):
 
         res = self.client.delete(url)
         self.assertEqual(res.status_code, status.HTTP_405_METHOD_NOT_ALLOWED)
+
+
+class FlightApiFilterTests(TestCase):
+    def setUp(self):
+        self.client = APIClient()
+        self.user = get_user_model().objects.create_user(
+            email="test@test.com",
+            password="passwordtest123",
+            is_staff=True,
+        )
+        self.client.force_authenticate(user=self.user)
+
+    def test_flight_filters(self):
+        flight = sample_flight()
+        response = self.client.get(
+            f"{FLIGHT_URL}?route={flight.route.id}"
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data["results"][0]["id"], flight.id)
+
+        response = self.client.get(
+            f"{FLIGHT_URL}?airplane={flight.airplane.id}"
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        response = self.client.get("/api/airport/flights/?departure_time=2026-09-21")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
