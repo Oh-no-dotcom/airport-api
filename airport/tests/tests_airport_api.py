@@ -371,7 +371,7 @@ class FlightApiUpdateDeleteTests(TestCase):
         self.user = get_user_model().objects.create_user(
             email="test@test.com",
             password="passwordtest123",
-            is_staff = True,
+            is_staff=True,
         )
         self.client.force_authenticate(user=self.user)
 
@@ -423,5 +423,7 @@ class FlightApiFilterTests(TestCase):
         )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
-        response = self.client.get("/api/airport/flights/?departure_time=2026-09-21")
+        response = self.client.get(
+            "/api/airport/flights/?departure_time=2026-09-21"
+        )
         self.assertEqual(response.status_code, status.HTTP_200_OK)

@@ -139,13 +139,15 @@ class FlightSerializer(serializers.ModelSerializer):
 class FlightListSerializer(serializers.ModelSerializer):
     route = serializers.StringRelatedField()
     airplane = serializers.StringRelatedField()
-    airplane_image = serializers.ImageField(source="airplane.image", read_only=True)
+    airplane_image = serializers.ImageField(
+        source="airplane.image",
+        read_only=True
+    )
     crew = serializers.StringRelatedField(many=True)
     tickets_available = serializers.IntegerField(read_only=True)
     airplane_capacity = serializers.IntegerField(
         source="airplane.capacity", read_only=True
     )
-
 
     class Meta:
         model = Flight
@@ -185,6 +187,7 @@ class FlightRetrieveSerializer(serializers.ModelSerializer):
             {"row": ticket.row, "seat": ticket.seat}
             for ticket in obj.tickets.all()
         ]
+
 
 class TicketSerializer(serializers.ModelSerializer):
     def validate(self, attrs):
