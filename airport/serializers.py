@@ -1,0 +1,229 @@
+from django.db import transaction
+from rest_framework import serializers
+from rest_framework.exceptions import ValidationError
+
+from airport.models import (
+    Country,
+    City,
+    Airport,
+    AirplaneType,
+    Airplane,
+    Route,
+    Crew,
+    Flight,
+    Order,
+    Ticket,
+)
+
+
+class CountrySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Country
+        fields = ("id", "name")
+
+
+class CitySerializer(serializers.ModelSerializer):
+    country = CountrySerializer(read_only=True)
+    country_id = serializers.PrimaryKeyRelatedField(
+        source="country",
+        queryset=Country.objects.all(),
+        write_only=True,
+    )
+
+    class Meta:
+        model = City
+        fields = ("id", "name", "country", "country_id")
+
+
+class AirportSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Airport
+        fields = ("id", "name", "iata_code", "closest_big_city")
+
+
+class AirportListSerializer(serializers.ModelSerializer):
+    closest_big_city = serializers.StringRelatedField()
+
+    class Meta:
+        model = Airport
+        fields = ("id", "name", "iata_code", "closest_big_city")
+
+
+class AirportDetailSerializer(serializers.ModelSerializer):
+    closest_big_city = CitySerializer(many=False, read_only=True)
+
+    class Meta:
+        model = Airport
+        fields = ("id", "name", "iata_code", "closest_big_city")
+
+
+class AirplaneTypeSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = AirplaneType
+        fields = ("id", "name")
+
+
+class AirplaneSerializer(serializers.ModelSerializer):
+    airplane_type = serializers.StringRelatedField()
+    airplane_type_id = serializers.PrimaryKeyRelatedField(
+        source="airplane_type",
+        queryset=AirplaneType.objects.all(),
+        write_only=True
+    )
+    image = serializers.ImageField(required=False)
+
+    class Meta:
+        model = Airplane
+        fields = (
+            "id",
+            "name",
+            "rows",
+            "seats_in_row",
+            "airplane_type",
+            "airplane_type_id",
+            "image"
+        )
+
+
+class RouteSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Route
+        fields = ("id", "distance", "source", "destination")
+
+
+class RouteListSerializer(serializers.ModelSerializer):
+    source = serializers.StringRelatedField()
+    destination = serializers.StringRelatedField()
+
+    class Meta:
+        model = Route
+        fields = ("id", "distance", "source", "destination")
+
+
+class RouteAirportSerializer(serializers.ModelSerializer):
+    closest_big_city = CitySerializer(read_only=True)
+
+    class Meta:
+        model = Airport
+        fields = ("id", "name", "iata_code", "closest_big_city")
+
+
+class RouteRetrieveSerializer(serializers.ModelSerializer):
+    source = RouteAirportSerializer(many=False, read_only=True)
+    destination = RouteAirportSerializer(many=False, read_only=True)
+
+    class Meta:
+        model = Route
+        fields = ("id", "distance", "source", "destination")
+
+
+class CrewSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Crew
+        fields = ("id", "first_name", "last_name", "position")
+
+
+class FlightSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Flight
+        fields = (
+            "id",
+            "route",
+            "airplane",
+            "crew",
+            "departure_time",
+            "arrival_time"
+        )
+
+
+class FlightListSerializer(serializers.ModelSerializer):
+    route = serializers.StringRelatedField()
+    airplane = serializers.StringRelatedField()
+    airplane_image = serializers.ImageField(
+        source="airplane.image",
+        read_only=True
+    )
+    crew = serializers.StringRelatedField(many=True)
+    tickets_available = serializers.IntegerField(read_only=True)
+    airplane_capacity = serializers.IntegerField(
+        source="airplane.capacity", read_only=True
+    )
+
+    class Meta:
+        model = Flight
+        fields = (
+            "id",
+            "route",
+            "airplane",
+            "airplane_image",
+            "crew",
+            "departure_time",
+            "arrival_time",
+            "tickets_available",
+            "airplane_capacity",
+        )
+
+
+class FlightRetrieveSerializer(serializers.ModelSerializer):
+    route = RouteRetrieveSerializer(many=False, read_only=True)
+    airplane = AirplaneSerializer(many=False, read_only=True)
+    crew = CrewSerializer(many=True, read_only=True)
+    taken_places = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Flight
+        fields = (
+            "id",
+            "route",
+            "airplane",
+            "crew",
+            "departure_time",
+            "arrival_time",
+            "taken_places",
+        )
+
+    def get_taken_places(self, obj):
+        return [
+            {"row": ticket.row, "seat": ticket.seat}
+            for ticket in obj.tickets.all()
+        ]
+
+
+class TicketSerializer(serializers.ModelSerializer):
+    def validate(self, attrs):
+        data = super(TicketSerializer, self).validate(attrs=attrs)
+        Ticket.validate_ticket(
+            attrs["row"],
+            attrs["seat"],
+            attrs["flight"].airplane,
+            ValidationError
+        )
+        return data
+
+    class Meta:
+        model = Ticket
+        fields = ("id", "row", "seat", "flight")
+
+
+class TicketListSerializer(TicketSerializer):
+    flight = FlightListSerializer(many=False, read_only=True)
+
+
+class OrderSerializer(serializers.ModelSerializer):
+    tickets = TicketSerializer(many=True, read_only=False, allow_empty=False)
+
+    class Meta:
+        model = Order
+        fields = ("id", "tickets", "created_at")
+
+    def create(self, validated_data):
+        with transaction.atomic():
+            tickets_data = validated_data.pop("tickets")
+            order = Order.objects.create(**validated_data)
+            for ticket_data in tickets_data:
+                Ticket.objects.create(order=order, **ticket_data)
+            return order
+
+
+class OrderListSerializer(OrderSerializer):
+    tickets = TicketListSerializer(many=True, read_only=False)
