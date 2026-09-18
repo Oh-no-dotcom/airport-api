@@ -48,6 +48,9 @@ POSTGRES_PASSWORD=airport_api
 POSTGRES_HOST=localhost
 POSTGRES_PORT=5432
 
+SECRET_KEY=your-secret-key
+DEBUG=True
+
 python manage.py migrate
 python manage.py runserver
 

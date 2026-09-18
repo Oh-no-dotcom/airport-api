@@ -49,6 +49,9 @@ class Airport(models.Model):
 class AirplaneType(models.Model):
     name = models.CharField(max_length=255, unique=True)
 
+    class Meta:
+        ordering = ["name"]
+
     def __str__(self) -> str:
         return self.name
 
@@ -88,6 +91,9 @@ class Route(models.Model):
         related_name="routes_to"
     )
 
+    class Meta:
+        ordering = ["source"]
+
     def __str__(self) -> str:
         return f"From {self.source} to {self.destination}"
 
@@ -96,6 +102,9 @@ class Crew(models.Model):
     first_name = models.CharField(max_length=255)
     last_name = models.CharField(max_length=255)
     position = models.CharField(max_length=255)
+
+    class Meta:
+        ordering = ["position"]
 
     def __str__(self) -> str:
         return f"{self.first_name} {self.last_name} ({self.position})"
